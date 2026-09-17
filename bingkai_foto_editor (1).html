@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembuat Bingkai Foto Pro</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Font Inter & Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,400&family=Pacifico&family=Cinzel:wght@600&family=Space+Grotesk:wght@600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                        cursive: ['Pacifico', 'cursive'],
+                        cinzel: ['Cinzel', 'serif'],
+                        tech: ['Space Grotesk', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(71, 85, 105, 1);
+        }
+        .checkerboard-bg {
+            background-color: #1e293b;
+            background-image: 
+                linear-gradient(45deg, #0f172a 25%, transparent 25%), 
+                linear-gradient(-45deg, #0f172a 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #0f172a 75%), 
+                linear-gradient(-45deg, transparent 75%, #0f172a 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans overflow-hidden bg-slate-950 text-slate-100">
+
+    <!-- Header App -->
+    <header class="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-4 lg:px-8 flex items-center justify-between shrink-0 z-20">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i data-lucide="frame" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">FrameArt Studio</h1>
+                <p class="text-xs text-slate-400 mt-0.5">Edit Bingkai & Ukuran Foto Instan</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+            <button id="btn-reset" class="px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-medium transition flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Reset</span>
+            </button>
+            <button id="btn-download" class="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs sm:text-sm font-semibold transition flex items-center gap-2 shadow-lg shadow-indigo-600/30">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Unduh Foto</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+        <!-- Canvas Visual Preview Workspace -->
+        <main class="flex-1 flex flex-col items-center justify-center p-4 lg:p-6 bg-slate-950 checkerboard-bg relative overflow-hidden select-none">
+            
+            <!-- Floating Canvas Toolbar Overlay -->
+            <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-full px-4 py-1.5 flex items-center gap-3 shadow-xl">
+                <span id="dimension-indicator" class="text-xs font-mono text-indigo-400 font-semibold">1080 x 1080 px</span>
+                <span class="w-1 h-1 rounded-full bg-slate-700"></span>
+                <span id="ratio-indicator" class="text-xs text-slate-300">1:1 Square</span>
+            </div>
+
+            <!-- Canvas Container -->
+            <div id="canvas-wrapper" class="relative max-w-full max-h-[calc(100vh-180px)] flex items-center justify-center p-2 transition-all">
+                <canvas id="photoCanvas" class="max-w-full max-h-[calc(100vh-200px)] object-contain shadow-2xl rounded-sm cursor-grab active:cursor-grabbing border border-slate-800/50"></canvas>
+            </div>
+
+            <!-- Canvas Helper Hint -->
+            <div id="canvas-hint" class="mt-3 text-xs text-slate-400 flex items-center gap-1.5 bg-slate-900/60 px-3 py-1 rounded-full border border-slate-800">
+                <i data-lucide="move" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span>Klik & geser di kanvas untuk mengatur posisi foto</span>
+            </div>
+
+            <!-- Custom Notification Popup Toast -->
+            <div id="toast-message" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-800 border border-slate-700 text-slate-200 text-sm px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 transition-all transform duration-300">
+                <i id="toast-icon" data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+                <span id="toast-text">Pesan berhasil</span>
+            </div>
+        </main>
+
+        <!-- Sidebar Control Panel -->
+        <aside class="w-full lg:w-[380px] xl:w-[420px] bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col h-[50vh] lg:h-full shrink-0 z-10">
+            
+            <!-- Navigation Tabs -->
+            <div class="flex border-b border-slate-800 bg-slate-950/50 p-1 gap-1 shrink-0 overflow-x-auto custom-scrollbar">
+                <button data-tab="upload" class="tab-btn flex-1 min-w-[75px] py-2.5 px-2 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition text-indigo-400 bg-slate-800/80 border border-slate-700/50">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    <span>Foto</span>
+                </button>
+                <button data-tab="ratio" class="tab-btn flex-1 min-w-[75px] py-2.5 px-2 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/40">
+                    <i data-lucide="aspect-ratio" class="w-4 h-4"></i>
+                    <span>Ukuran</span>
+                </button>
+                <button data-tab="frame" class="tab-btn flex-1 min-w-[75px] py-2.5 px-2 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/40">
+                    <i data-lucide="palette" class="w-4 h-4"></i>
+                    <span>Bingkai</span>
+                </button>
+                <button data-tab="adjust" class="tab-btn flex-1 min-w-[75px] py-2.5 px-2 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/40">
+                    <i data-lucide="sliders" class="w-4 h-4"></i>
+                    <span>Edit</span>
+                </button>
+                <button data-tab="text" class="tab-btn flex-1 min-w-[75px] py-2.5 px-2 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/40">
+                    <i data-lucide="type" class="w-4 h-4"></i>
+                    <span>Teks</span>
+                </button>
+            </div>
+
+            <!-- Tab Contents Container -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+
+                <!-- TAB 1: UPLOAD & INPUT FOTO -->
+                <div id="tab-content-upload" class="tab-content space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Unggah Foto Utama</label>
+                        <div id="dropzone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-950/60 hover:bg-indigo-950/20 rounded-2xl p-6 transition flex flex-col items-center justify-center text-center cursor-pointer group">
+                            <input type="file" id="image-input" accept="image/*" class="hidden">
+                            <div class="w-12 h-12 rounded-full bg-slate-800 group-hover:bg-indigo-600/20 group-hover:text-indigo-400 flex items-center justify-center text-slate-400 transition mb-3">
+                                <i data-lucide="image-plus" class="w-6 h-6"></i>
+                            </div>
+                            <p class="text-sm font-semibold text-slate-200 group-hover:text-indigo-300">Pilih foto dari perangkat</p>
+                            <p class="text-xs text-slate-500 mt-1">atau seret dan lepas foto di sini (JPG, PNG, WEBP)</p>
+                        </div>
+                    </div>
+
+                    <!-- Preset Sample Images -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Atau Gunakan Foto Contoh</label>
+                        <div class="grid grid-cols-4 gap-2.5">
+                            <button class="sample-img-btn rounded-xl overflow-hidden border-2 border-transparent hover:border-indigo-500 focus:border-indigo-500 transition aspect-square" data-src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Potret 1" class="w-full h-full object-cover">
+                            </button>
+                            <button class="sample-img-btn rounded-xl overflow-hidden border-2 border-transparent hover:border-indigo-500 focus:border-indigo-500 transition aspect-square" data-src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" alt="Potret 2" class="w-full h-full object-cover">
+                            </button>
+                            <button class="sample-img-btn rounded-xl overflow-hidden border-2 border-transparent hover:border-indigo-500 focus:border-indigo-500 transition aspect-square" data-src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80">
+                                <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=150&q=80" alt="Pemandangan" class="w-full h-full object-cover">
+                            </button>
+                            <button class="sample-img-btn rounded-xl overflow-hidden border-2 border-transparent hover:border-indigo-500 focus:border-indigo-500 transition aspect-square" data-src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80">
+                                <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80" alt="Gaya Hidup" class="w-full h-full object-cover">
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Transform Quick Tools -->
+                    <div class="pt-2 border-t border-slate-800 space-y-4">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Transformasi Foto</label>
+                        
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Skala / Zoom Foto</span>
+                                <span id="val-scale" class="font-mono text-indigo-400">100%</span>
+                            </div>
+                            <input type="range" id="input-scale" min="0.2" max="3" step="0.02" value="1" class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Rotasi Posisi</span>
+                                <span id="val-rotation" class="font-mono text-indigo-400">0°</span>
+                            </div>
+                            <input type="range" id="input-rotation" min="-180" max="180" step="1" value="0" class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button id="btn-flip-h" class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 flex items-center justify-center gap-2 border border-slate-700">
+                                <i data-lucide="flip-horizontal" class="w-4 h-4"></i> Flip Horisontal
+                            </button>
+                            <button id="btn-flip-v" class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 flex items-center justify-center gap-2 border border-slate-700">
+                                <i data-lucide="flip-vertical" class="w-4 h-4"></i> Flip Vertikal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: RATIO & DIMENSION SETTINGS -->
+                <div id="tab-content-ratio" class="tab-content hidden space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Pilihan Rasio & Ukuran Foto</label>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <!-- Square 1:1 -->
+                            <button data-ratio="1:1" data-w="1080" data-h="1080" class="ratio-btn active bg-slate-800 border-2 border-indigo-500 rounded-xl p-3 flex flex-col items-start gap-2 text-left transition hover:bg-slate-750">
+                                <div class="w-7 h-7 rounded border-2 border-indigo-400 bg-indigo-500/20 flex items-center justify-center text-[10px] font-bold text-indigo-300">1:1</div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-100">Square / Persegi</p>
+                                    <p class="text-[11px] text-slate-400">1080 x 1080 px (IG Post)</p>
+                                </div>
+                            </button>
+
+                            <!-- Story 9:16 -->
+                            <button data-ratio="9:16" data-w="1080" data-h="1920" class="ratio-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-3 flex flex-col items-start gap-2 text-left transition">
+                                <div class="w-5 h-8 rounded border-2 border-slate-400 bg-slate-700/30 flex items-center justify-center text-[9px] font-bold text-slate-300">9:16</div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-100">Potret Tinggi / Story</p>
+                                    <p class="text-[11px] text-slate-400">1080 x 1920 px (Reels/Story)</p>
+                                </div>
+                            </button>
+
+                            <!-- Portrait 4:5 -->
+                            <button data-ratio="4:5" data-w="1080" data-h="1350" class="ratio-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-3 flex flex-col items-start gap-2 text-left transition">
+                                <div class="w-6 h-7 rounded border-2 border-slate-400 bg-slate-700/30 flex items-center justify-center text-[9px] font-bold text-slate-300">4:5</div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-100">Potret Sosial</p>
+                                    <p class="text-[11px] text-slate-400">1080 x 1350 px (Feed Portrait)</p>
+                                </div>
+                            </button>
+
+                            <!-- Landscape 16:9 -->
+                            <button data-ratio="16:9" data-w="1920" data-h="1080" class="ratio-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-3 flex flex-col items-start gap-2 text-left transition">
+                                <div class="w-8 h-5 rounded border-2 border-slate-400 bg-slate-700/30 flex items-center justify-center text-[9px] font-bold text-slate-300">16:9</div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-100">Lansekap / Youtube</p>
+                                    <p class="text-[11px] text-slate-400">1920 x 1080 px (Banner/HD)</p>
+                                </div>
+                            </button>
+
+                            <!-- Standard Photo 3:4 -->
+                            <button data-ratio="3:4" data-w="1200" data-h="1600" class="ratio-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-3 flex flex-col items-start gap-2 text-left transition">
+                                <div class="w-6 h-8 rounded border-2 border-slate-400 bg-slate-700/30 flex items-center justify-center text-[9px] font-bold text-slate-300">3:4</div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-100">Pas Foto / Cetak</p>
+                                    <p class="text-[11px] text-slate-400">1200 x 1600 px (3x4 cm / Potret)</p>
+                                </div>
+                            </button>
+
+                            <!-- Classic Photo 4:3 -->
+                            <button data-ratio="4:3" data-w="1600" data-h="1200" class="ratio-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-3 flex flex-col items-start gap-2 text-left transition">
+                                <div class="w-8 h-6 rounded border-2 border-slate-400 bg-slate-700/30 flex items-center justify-center text-[9px] font-bold text-slate-300">4:3</div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-100">Kamera Klasik</p>
+                                    <p class="text-[11px] text-slate-400">1600 x 1200 px (Foto standar)</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Resolution Input -->
+                    <div class="pt-3 border-t border-slate-800">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Resolusi Kustom (PX)</label>
+                            <button id="btn-apply-custom-res" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300">Terapkan</button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1">
+                                <span class="text-[10px] text-slate-400 block mb-1">Lebar</span>
+                                <input type="number" id="custom-w" value="1080" min="200" max="4000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:border-indigo-500 outline-none">
+                            </div>
+                            <span class="text-slate-500 mt-4">×</span>
+                            <div class="flex-1">
+                                <span class="text-[10px] text-slate-400 block mb-1">Tinggi</span>
+                                <input type="number" id="custom-h" value="1080" min="200" max="4000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:border-indigo-500 outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: FRAME DESIGNS -->
+                <div id="tab-content-frame" class="tab-content hidden space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Gaya & Tema Bingkai</label>
+                        
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <!-- None -->
+                            <button data-frame="none" class="frame-style-btn active bg-slate-800 border-2 border-indigo-500 rounded-xl p-2.5 flex items-center gap-3 transition">
+                                <div class="w-8 h-8 rounded-lg bg-slate-950 border border-slate-700 flex items-center justify-center text-slate-400">
+                                    <i data-lucide="ban" class="w-4 h-4"></i>
+                                </div>
+                                <span class="text-xs font-medium text-slate-200">Tanpa Bingkai</span>
+                            </button>
+
+                            <!-- Modern Minimalist -->
+                            <button data-frame="minimal" class="frame-style-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-2.5 flex items-center gap-3 transition">
+                                <div class="w-8 h-8 rounded-lg bg-white border-4 border-slate-900 flex items-center justify-center shadow">
+                                    <div class="w-full h-full border border-indigo-500"></div>
+                                </div>
+                                <span class="text-xs font-medium text-slate-200">Minimalis Modern</span>
+                            </button>
+
+                            <!-- Polaroid Vintage -->
+                            <button data-frame="polaroid" class="frame-style-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-2.5 flex items-center gap-3 transition">
+                                <div class="w-8 h-8 rounded-lg bg-amber-50 p-1 flex flex-col justify-between shadow">
+                                    <div class="w-full h-4 bg-slate-400 rounded-xs"></div>
+                                </div>
+                                <span class="text-xs font-medium text-slate-200">Polaroid Vintage</span>
+                            </button>
+
+                            <!-- Elegant Gold Wooden -->
+                            <button data-frame="classic-wood" class="frame-style-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-2.5 flex items-center gap-3 transition">
+                                <div class="w-8 h-8 rounded-lg bg-amber-800 border-2 border-amber-400 p-0.5 flex items-center justify-center">
+                                    <div class="w-full h-full border border-amber-300"></div>
+                                </div>
+                                <span class="text-xs font-medium text-slate-200">Kayu Emas Klasik</span>
+                            </button>
+
+                            <!-- Cyber Neon Glow -->
+                            <button data-frame="neon" class="frame-style-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-2.5 flex items-center gap-3 transition">
+                                <div class="w-8 h-8 rounded-lg bg-slate-950 border-2 border-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
+                                <span class="text-xs font-medium text-slate-200">Neon Cyberpunk</span>
+                            </button>
+
+                            <!-- Twibbon Badge Frame -->
+                            <button data-frame="twibbon" class="frame-style-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-2.5 flex items-center gap-3 transition">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-600 border-2 border-purple-400 flex items-center justify-center">
+                                    <i data-lucide="award" class="w-4 h-4 text-white"></i>
+                                </div>
+                                <span class="text-xs font-medium text-slate-200">Twibbon / Event</span>
+                            </button>
+
+                            <!-- Floral Decorative -->
+                            <button data-frame="floral" class="frame-style-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-2.5 flex items-center gap-3 transition">
+                                <div class="w-8 h-8 rounded-lg bg-rose-950 border border-rose-500 flex items-center justify-center">
+                                    <i data-lucide="flower-2" class="w-4 h-4 text-rose-400"></i>
+                                </div>
+                                <span class="text-xs font-medium text-slate-200">Floral / Bunga</span>
+                            </button>
+
+                            <!-- Gradient Modern -->
+                            <button data-frame="gradient" class="frame-style-btn bg-slate-800/60 border-2 border-slate-700 hover:border-slate-500 rounded-xl p-2.5 flex items-center gap-3 transition">
+                                <div class="w-8 h-8 rounded-lg bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 p-1">
+                                    <div class="w-full h-full bg-slate-900 rounded-sm"></div>
+                                </div>
+                                <span class="text-xs font-medium text-slate-200">Gradient Flow</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Border Parameters -->
+                    <div class="pt-3 border-t border-slate-800 space-y-4">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Kustomisasi Bingkai</label>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Ketebalan Bingkai</span>
+                                <span id="val-frame-width" class="font-mono text-indigo-400">40px</span>
+                            </div>
+                            <input type="range" id="input-frame-width" min="10" max="120" value="40" class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Jarak Dalam (Padding)</span>
+                                <span id="val-frame-padding" class="font-mono text-indigo-400">0px</span>
+                            </div>
+                            <input type="range" id="input-frame-padding" min="0" max="60" value="0" class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Sudut Melengkung (Corner Radius)</span>
+                                <span id="val-frame-radius" class="font-mono text-indigo-400">0px</span>
+                            </div>
+                            <input type="range" id="input-frame-radius" min="0" max="80" value="0" class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[11px] text-slate-400 block mb-1">Warna Utama Bingkai</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="color" id="input-frame-color" value="#ffffff" class="w-9 h-9 rounded-lg border border-slate-700 bg-slate-950 cursor-pointer p-0.5">
+                                    <span id="hex-frame-color" class="text-xs font-mono text-slate-300">#ffffff</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[11px] text-slate-400 block mb-1">Warna Aksen / Latar</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="color" id="input-accent-color" value="#6366f1" class="w-9 h-9 rounded-lg border border-slate-700 bg-slate-950 cursor-pointer p-0.5">
+                                    <span id="hex-accent-color" class="text-xs font-mono text-slate-300">#6366f1</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: PHOTO ADJUSTMENTS & FILTERS -->
+                <div id="tab-content-adjust" class="tab-content hidden space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Filter Foto Preset</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button data-filter="normal" class="filter-btn active py-2 px-2 rounded-lg bg-indigo-600 text-white text-xs font-medium text-center transition">Normal</button>
+                            <button data-filter="grayscale" class="filter-btn py-2 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium text-center transition">Hitam-Putih</button>
+                            <button data-filter="sepia" class="filter-btn py-2 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium text-center transition">Sepia Vintage</button>
+                            <button data-filter="warm" class="filter-btn py-2 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium text-center transition">Warm Sun</button>
+                            <button data-filter="cool" class="filter-btn py-2 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium text-center transition">Cool Breeze</button>
+                            <button data-filter="dramatic" class="filter-btn py-2 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium text-center transition">Dramatis</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 pt-2 border-t border-slate-800">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Penyesuaian Visual</label>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Kecerahan (Brightness)</span>
+                                <span id="val-brightness" class="font-mono text-indigo-400">100%</span>
+                            </div>
+                            <input type="range" id="input-brightness" min="50" max="150" value="100" class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Kontras (Contrast)</span>
+                                <span id="val-contrast" class="font-mono text-indigo-400">100%</span>
+                            </div>
+                            <input type="range" id="input-contrast" min="50" max="150" value="100" class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Saturasi Warna</span>
+                                <span id="val-saturate" class="font-mono text-indigo-400">100%</span>
+                            </div>
+                            <input type="range" id="input-saturate" min="0" max="200" value="100" class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Efek Buram (Blur Foto)</span>
+                                <span id="val-blur" class="font-mono text-indigo-400">0px</span>
+                            </div>
+                            <input type="range" id="input-blur" min="0" max="20" value="0" class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: TEXT OVERLAY -->
+                <div id="tab-content-text" class="tab-content hidden space-y-5">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Daftar Teks Foto</label>
+                        <button id="btn-add-text" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1 shadow-md transition">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Tambah Teks</span>
+                        </button>
+                    </div>
+
+                    <!-- Text items list selector buttons -->
+                    <div id="text-items-list" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+
+                    <!-- Active text element editor form -->
+                    <div id="text-editor-box" class="space-y-4 pt-3 border-t border-slate-800">
+                        <div>
+                            <label class="text-[11px] text-slate-400 block mb-1">Isi Teks Caption</label>
+                            <input type="text" id="input-text-content" value="Momen Spesial" placeholder="Ketik caption foto..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:border-indigo-500 outline-none">
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] text-slate-400 block mb-1">Gaya Font Teks</label>
+                            <select id="input-text-font" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:border-indigo-500 outline-none">
+                                <option value="sans">Sans-Serif Modern (Inter)</option>
+                                <option value="serif">Serif Klasik (Playfair Display)</option>
+                                <option value="cursive">Tulisan Tangan (Pacifico)</option>
+                                <option value="cinzel">Mewah / Luxury (Cinzel)</option>
+                                <option value="tech">Modern Tech (Space Grotesk)</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[11px] text-slate-400 block mb-1">Ukuran Teks</label>
+                                <input type="range" id="input-text-size" min="16" max="120" value="44" class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="text-[11px] text-slate-400 block mb-1">Warna Teks</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="color" id="input-text-color" value="#ffffff" class="w-9 h-9 rounded-lg border border-slate-700 bg-slate-950 cursor-pointer p-0.5">
+                                    <span id="hex-text-color" class="text-xs font-mono text-slate-300">#ffffff</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex items-center justify-between border-t border-slate-800/60">
+                            <span class="text-[11px] text-slate-400 italic">💡 Sentuh/klik & tarik teks di kanvas untuk menggeser.</span>
+                            <button id="btn-delete-text" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1 transition">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                <span>Hapus Teks</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Lucide icons
+            lucide.createIcons();
+
+            // Application State
+            const state = {
+                image: null,
+                width: 1080,
+                height: 1080,
+                ratioName: '1:1',
+                
+                // Image transformation
+                scale: 1,
+                rotation: 0,
+                offsetX: 0,
+                offsetY: 0,
+                flipH: false,
+                flipV: false,
+
+                // Frame parameters
+                frameStyle: 'none', // none, minimal, polaroid, classic-wood, neon, twibbon, floral, gradient
+                frameWidth: 40,
+                framePadding: 0,
+                frameRadius: 0,
+                frameColor: '#ffffff',
+                accentColor: '#6366f1',
+
+                // Filter parameters
+                filterPreset: 'normal',
+                brightness: 100,
+                contrast: 100,
+                saturate: 100,
+                blur: 0,
+
+                // Multi-Text Overlay State
+                texts: [
+                    {
+                        id: 'txt_1',
+                        content: 'Momen Spesial',
+                        font: 'sans',
+                        size: 44,
+                        color: '#ffffff',
+                        x: 540,
+                        y: 920
+                    }
+                ],
+                selectedTextId: 'txt_1'
+            };
+
+            // DOM Element References
+            const canvas = document.getElementById('photoCanvas');
+            const ctx = canvas.getContext('2d');
+            const dropzone = document.getElementById('dropzone');
+            const imageInput = document.getElementById('image-input');
+            const sampleBtns = document.querySelectorAll('.sample-img-btn');
+
+            // Interactive Dragging Variables
+            let draggedType = null; // 'image' or 'text'
+            let draggedTextId = null;
+            let dragOffsetX = 0;
+            let dragOffsetY = 0;
+            let startX = 0;
+            let startY = 0;
+            let isExporting = false;
+
+            // Render Canvas Function
+            function render() {
+                // Update Canvas Dimensions
+                canvas.width = state.width;
+                canvas.height = state.height;
+
+                // Clear Canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Save initial context state
+                ctx.save();
+
+                // 1. Draw Background Area inside Frame / Canvas
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Calculate image region boundary
+                let inset = 0;
+                if (state.frameStyle !== 'none') {
+                    inset = state.frameWidth + state.framePadding;
+                }
+                
+                if (state.frameStyle === 'polaroid') {
+                    inset = state.frameWidth;
+                }
+
+                const imgAreaX = inset;
+                const imgAreaY = inset;
+                const imgAreaW = Math.max(10, canvas.width - inset * 2);
+                let imgAreaH = Math.max(10, canvas.height - inset * 2);
+
+                if (state.frameStyle === 'polaroid') {
+                    imgAreaH = Math.max(10, canvas.height - inset - (state.frameWidth * 2.8));
+                }
+
+                // 2. Draw Uploaded Photo
+                if (state.image) {
+                    ctx.save();
+
+                    ctx.beginPath();
+                    if (state.frameRadius > 0) {
+                        const r = Math.min(state.frameRadius, imgAreaW / 2, imgAreaH / 2);
+                        ctx.roundRect(imgAreaX, imgAreaY, imgAreaW, imgAreaH, r);
+                    } else {
+                        ctx.rect(imgAreaX, imgAreaY, imgAreaW, imgAreaH);
+                    }
+                    ctx.clip();
+
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(imgAreaX, imgAreaY, imgAreaW, imgAreaH);
+
+                    let filterString = `brightness(${state.brightness}%) contrast(${state.contrast}%) saturate(${state.saturate}%) blur(${state.blur}px)`;
+                    
+                    if (state.filterPreset === 'grayscale') filterString += ' grayscale(100%)';
+                    else if (state.filterPreset === 'sepia') filterString += ' sepia(80%)';
+                    else if (state.filterPreset === 'warm') filterString += ' sepia(30%) hue-rotate(-10deg) saturate(140%)';
+                    else if (state.filterPreset === 'cool') filterString += ' hue-rotate(30deg) saturate(110%)';
+                    else if (state.filterPreset === 'dramatic') filterString += ' contrast(140%) brightness(90%)';
+
+                    ctx.filter = filterString.trim();
+
+                    const centerX = imgAreaX + imgAreaW / 2 + state.offsetX;
+                    const centerY = imgAreaY + imgAreaH / 2 + state.offsetY;
+
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate((state.rotation * Math.PI) / 180);
+                    ctx.scale(state.flipH ? -1 : 1, state.flipV ? -1 : 1);
+
+                    const imgAspect = state.image.width / state.image.height;
+                    const areaAspect = imgAreaW / imgAreaH;
+                    let drawW, drawH;
+
+                    if (imgAspect > areaAspect) {
+                        drawH = imgAreaH * state.scale;
+                        drawW = drawH * imgAspect;
+                    } else {
+                        drawW = imgAreaW * state.scale;
+                        drawH = drawW / imgAspect;
+                    }
+
+                    ctx.drawImage(state.image, -drawW / 2, -drawH / 2, drawW, drawH);
+                    ctx.restore();
+                } else {
+                    ctx.save();
+                    ctx.fillStyle = '#334155';
+                    ctx.fillRect(imgAreaX, imgAreaY, imgAreaW, imgAreaH);
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '500 24px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('Unggah foto untuk mulai', imgAreaX + imgAreaW / 2, imgAreaY + imgAreaH / 2);
+                    ctx.restore();
+                }
+
+                // 3. Draw Selected Frame Overlay Style
+                ctx.save();
+                drawFrameOverlay(ctx, canvas.width, canvas.height, imgAreaX, imgAreaY, imgAreaW, imgAreaH);
+                ctx.restore();
+
+                // 4. Draw All Multiple Text Overlays
+                if (state.texts && state.texts.length > 0) {
+                    drawTextOverlays(ctx, canvas.width, canvas.height);
+                }
+
+                ctx.restore();
+
+                // Update UI Indicators
+                document.getElementById('dimension-indicator').innerText = `${state.width} x ${state.height} px`;
+                document.getElementById('ratio-indicator').innerText = `${state.ratioName}`;
+            }
+
+            // Helper function to render text overlays with drag boundary indication
+            function drawTextOverlays(ctx, w, h) {
+                state.texts.forEach((textItem) => {
+                    ctx.save();
+                    
+                    let fontFamily = 'Inter, sans-serif';
+                    if (textItem.font === 'serif') fontFamily = '"Playfair Display", serif';
+                    else if (textItem.font === 'cursive') fontFamily = 'Pacifico, cursive';
+                    else if (textItem.font === 'cinzel') fontFamily = 'Cinzel, serif';
+                    else if (textItem.font === 'tech') fontFamily = '"Space Grotesk", sans-serif';
+
+                    ctx.font = `600 ${textItem.size}px ${fontFamily}`;
+                    ctx.fillStyle = textItem.color;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    // Draw text content
+                    ctx.fillText(textItem.content, textItem.x, textItem.y);
+
+                    // If text is active & not exporting download, draw drag indicator bounding box
+                    if (textItem.id === state.selectedTextId && !isExporting) {
+                        const metrics = ctx.measureText(textItem.content);
+                        const textWidth = metrics.width;
+                        const textHeight = textItem.size;
+                        const pad = 10;
+
+                        ctx.strokeStyle = '#6366f1';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([6, 4]);
+                        ctx.strokeRect(
+                            textItem.x - textWidth / 2 - pad,
+                            textItem.y - textHeight / 2 - pad,
+                            textWidth + pad * 2,
+                            textHeight + pad * 2
+                        );
+                    }
+
+                    ctx.restore();
+                });
+            }
+
+            // Helper function to render artistic frames
+            function drawFrameOverlay(ctx, w, h, imgX, imgY, imgW, imgH) {
+                const fw = state.frameWidth;
+
+                switch (state.frameStyle) {
+                    case 'minimal': {
+                        ctx.fillStyle = state.frameColor;
+                        ctx.beginPath();
+                        ctx.rect(0, 0, w, h);
+                        ctx.rect(imgX, imgY, imgW, imgH);
+                        ctx.fill('evenodd');
+
+                        ctx.strokeStyle = state.accentColor;
+                        ctx.lineWidth = Math.max(2, fw / 10);
+                        ctx.strokeRect(imgX - 1, imgY - 1, imgW + 2, imgH + 2);
+                        break;
+                    }
+
+                    case 'polaroid': {
+                        ctx.fillStyle = state.frameColor || '#f8fafc';
+                        ctx.beginPath();
+                        ctx.rect(0, 0, w, h);
+                        ctx.rect(imgX, imgY, imgW, imgH);
+                        ctx.fill('evenodd');
+
+                        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(imgX, imgY, imgW, imgH);
+                        break;
+                    }
+
+                    case 'classic-wood': {
+                        ctx.fillStyle = state.frameColor || '#451a03';
+                        ctx.beginPath();
+                        ctx.rect(0, 0, w, h);
+                        ctx.rect(imgX, imgY, imgW, imgH);
+                        ctx.fill('evenodd');
+
+                        ctx.strokeStyle = state.accentColor || '#f59e0b';
+                        ctx.lineWidth = Math.max(4, fw / 6);
+                        ctx.strokeRect(imgX - 2, imgY - 2, imgW + 4, imgH + 4);
+
+                        ctx.strokeStyle = '#fef3c7';
+                        ctx.lineWidth = Math.max(2, fw / 12);
+                        ctx.strokeRect(fw / 2, fw / 2, w - fw, h - fw);
+                        break;
+                    }
+
+                    case 'neon': {
+                        ctx.fillStyle = '#090d16';
+                        ctx.beginPath();
+                        ctx.rect(0, 0, w, h);
+                        ctx.rect(imgX, imgY, imgW, imgH);
+                        ctx.fill('evenodd');
+
+                        ctx.shadowColor = state.accentColor;
+                        ctx.shadowBlur = 20;
+                        ctx.strokeStyle = state.accentColor;
+                        ctx.lineWidth = Math.max(4, fw / 4);
+                        ctx.strokeRect(imgX, imgY, imgW, imgH);
+                        ctx.shadowBlur = 0;
+                        break;
+                    }
+
+                    case 'twibbon': {
+                        ctx.fillStyle = state.frameColor;
+                        ctx.beginPath();
+                        ctx.rect(0, 0, w, h);
+                        ctx.rect(imgX, imgY, imgW, imgH);
+                        ctx.fill('evenodd');
+
+                        const gradient = ctx.createLinearGradient(0, 0, w, h);
+                        gradient.addColorStop(0, state.accentColor);
+                        gradient.addColorStop(1, '#ec4899');
+
+                        ctx.fillStyle = gradient;
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(w * 0.35, 0);
+                        ctx.lineTo(0, h * 0.35);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        ctx.beginPath();
+                        ctx.arc(w / 2, h + w * 0.4, w * 0.6, Math.PI, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                    }
+
+                    case 'floral': {
+                        ctx.fillStyle = state.frameColor || '#1e1b4b';
+                        ctx.beginPath();
+                        ctx.rect(0, 0, w, h);
+                        ctx.rect(imgX, imgY, imgW, imgH);
+                        ctx.fill('evenodd');
+
+                        ctx.fillStyle = state.accentColor;
+                        const drawCornerDecor = (cx, cy) => {
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, fw * 0.8, 0, Math.PI * 2);
+                            ctx.fill();
+                        };
+                        drawCornerDecor(fw, fw);
+                        drawCornerDecor(w - fw, fw);
+                        drawCornerDecor(fw, h - fw);
+                        drawCornerDecor(w - fw, h - fw);
+                        break;
+                    }
+
+                    case 'gradient': {
+                        const grad = ctx.createLinearGradient(0, 0, w, h);
+                        grad.addColorStop(0, state.accentColor);
+                        grad.addColorStop(0.5, '#ec4899');
+                        grad.addColorStop(1, '#8b5cf6');
+
+                        ctx.fillStyle = grad;
+                        ctx.beginPath();
+                        ctx.rect(0, 0, w, h);
+                        ctx.rect(imgX, imgY, imgW, imgH);
+                        ctx.fill('evenodd');
+                        break;
+                    }
+
+                    case 'none':
+                    default:
+                        break;
+                }
+            }
+
+            // Load Sample Image
+            function loadSampleImage(url) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    state.image = img;
+                    state.offsetX = 0;
+                    state.offsetY = 0;
+                    state.scale = 1;
+                    document.getElementById('input-scale').value = 1;
+                    document.getElementById('val-scale').innerText = '100%';
+                    render();
+                    showToast('Foto berhasil dimuat!');
+                };
+                img.onerror = () => {
+                    showToast('Gagal memuat foto contoh');
+                };
+                img.src = url;
+            }
+
+            // File Upload Handler
+            function handleFileUpload(file) {
+                if (!file || !file.type.startsWith('image/')) {
+                    showToast('Silakan pilih berkas gambar yang valid');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        state.image = img;
+                        state.offsetX = 0;
+                        state.offsetY = 0;
+                        state.scale = 1;
+                        document.getElementById('input-scale').value = 1;
+                        document.getElementById('val-scale').innerText = '100%';
+                        render();
+                        showToast('Foto berhasil diunggah!');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // Dropzone Events
+            dropzone.addEventListener('click', () => imageInput.click());
+            imageInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileUpload(e.target.files[0]);
+                }
+            });
+
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('border-indigo-500', 'bg-indigo-950/30');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('border-indigo-500', 'bg-indigo-950/30');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('border-indigo-500', 'bg-indigo-950/30');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFileUpload(e.dataTransfer.files[0]);
+                }
+            });
+
+            sampleBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const src = btn.getAttribute('data-src');
+                    loadSampleImage(src);
+                });
+            });
+
+            // Interactive Dragging on Canvas (Photo or Text objects)
+            const getCanvasCoords = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            };
+
+            const startDrag = (e) => {
+                const coords = getCanvasCoords(e);
+
+                // Check text hit test first (in reverse order so top-most text is selected)
+                if (state.texts && state.texts.length > 0) {
+                    ctx.save();
+                    for (let i = state.texts.length - 1; i >= 0; i--) {
+                        const t = state.texts[i];
+                        let fontFamily = 'Inter, sans-serif';
+                        if (t.font === 'serif') fontFamily = '"Playfair Display", serif';
+                        else if (t.font === 'cursive') fontFamily = 'Pacifico, cursive';
+                        else if (t.font === 'cinzel') fontFamily = 'Cinzel, serif';
+                        else if (t.font === 'tech') fontFamily = '"Space Grotesk", sans-serif';
+
+                        ctx.font = `600 ${t.size}px ${fontFamily}`;
+                        const metrics = ctx.measureText(t.content);
+                        const tw = metrics.width;
+                        const th = t.size;
+                        const pad = 12;
+
+                        const left = t.x - tw / 2 - pad;
+                        const right = t.x + tw / 2 + pad;
+                        const top = t.y - th / 2 - pad;
+                        const bottom = t.y + th / 2 + pad;
+
+                        if (coords.x >= left && coords.x <= right && coords.y >= top && coords.y <= bottom) {
+                            draggedType = 'text';
+                            draggedTextId = t.id;
+                            state.selectedTextId = t.id;
+                            dragOffsetX = coords.x - t.x;
+                            dragOffsetY = coords.y - t.y;
+                            ctx.restore();
+                            updateTextUI();
+                            render();
+                            return;
+                        }
+                    }
+                    ctx.restore();
+                }
+
+                // If no text was clicked, drag the photo image
+                if (state.image) {
+                    draggedType = 'image';
+                    startX = coords.x - state.offsetX;
+                    startY = coords.y - state.offsetY;
+                }
+            };
+
+            const moveDrag = (e) => {
+                if (!draggedType) return;
+                e.preventDefault();
+                const coords = getCanvasCoords(e);
+
+                if (draggedType === 'text' && draggedTextId) {
+                    const textObj = state.texts.find(t => t.id === draggedTextId);
+                    if (textObj) {
+                        textObj.x = coords.x - dragOffsetX;
+                        textObj.y = coords.y - dragOffsetY;
+                        render();
+                    }
+                } else if (draggedType === 'image') {
+                    state.offsetX = coords.x - startX;
+                    state.offsetY = coords.y - startY;
+                    render();
+                }
+            };
+
+            const endDrag = () => {
+                draggedType = null;
+                draggedTextId = null;
+            };
+
+            canvas.addEventListener('mousedown', startDrag);
+            canvas.addEventListener('mousemove', moveDrag);
+            window.addEventListener('mouseup', endDrag);
+
+            canvas.addEventListener('touchstart', startDrag, { passive: false });
+            canvas.addEventListener('touchmove', moveDrag, { passive: false });
+            window.addEventListener('touchend', endDrag);
+
+            // Sidebar Tabs
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.getAttribute('data-tab');
+
+                    tabBtns.forEach(b => {
+                        b.classList.remove('text-indigo-400', 'bg-slate-800/80', 'border', 'border-slate-700/50');
+                        b.classList.add('text-slate-400');
+                    });
+                    btn.classList.add('text-indigo-400', 'bg-slate-800/80', 'border', 'border-slate-700/50');
+                    btn.classList.remove('text-slate-400');
+
+                    tabContents.forEach(content => content.classList.add('hidden'));
+                    document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+                });
+            });
+
+            // Ratio Selectors
+            const ratioBtns = document.querySelectorAll('.ratio-btn');
+            ratioBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    ratioBtns.forEach(b => {
+                        b.classList.remove('active', 'border-indigo-500', 'bg-slate-800');
+                        b.classList.add('border-slate-700', 'bg-slate-800/60');
+                    });
+                    btn.classList.add('active', 'border-indigo-500', 'bg-slate-800');
+                    btn.classList.remove('border-slate-700', 'bg-slate-800/60');
+
+                    state.width = parseInt(btn.getAttribute('data-w'));
+                    state.height = parseInt(btn.getAttribute('data-h'));
+                    state.ratioName = btn.getAttribute('data-ratio');
+
+                    document.getElementById('custom-w').value = state.width;
+                    document.getElementById('custom-h').value = state.height;
+
+                    render();
+                });
+            });
+
+            // Custom Resolution
+            document.getElementById('btn-apply-custom-res').addEventListener('click', () => {
+                const w = parseInt(document.getElementById('custom-w').value) || 1080;
+                const h = parseInt(document.getElementById('custom-h').value) || 1080;
+                state.width = Math.max(200, Math.min(4000, w));
+                state.height = Math.max(200, Math.min(4000, h));
+                state.ratioName = 'Kustom';
+                render();
+                showToast(`Ukuran diubah: ${state.width} x ${state.height} px`);
+            });
+
+            // Frame Style Buttons
+            const frameBtns = document.querySelectorAll('.frame-style-btn');
+            frameBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    frameBtns.forEach(b => {
+                        b.classList.remove('active', 'border-indigo-500', 'bg-slate-800');
+                        b.classList.add('border-slate-700', 'bg-slate-800/60');
+                    });
+                    btn.classList.add('active', 'border-indigo-500', 'bg-slate-800');
+                    btn.classList.remove('border-slate-700', 'bg-slate-800/60');
+
+                    state.frameStyle = btn.getAttribute('data-frame');
+                    render();
+                });
+            });
+
+            // Sliders Helper
+            const bindSlider = (id, stateKey, displayId, unit = '') => {
+                const el = document.getElementById(id);
+                el.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    state[stateKey] = val;
+                    if (displayId) {
+                        document.getElementById(displayId).innerText = `${val}${unit}`;
+                    }
+                    render();
+                });
+            };
+
+            bindSlider('input-scale', 'scale', 'val-scale', '%');
+            document.getElementById('input-scale').addEventListener('input', (e) => {
+                document.getElementById('val-scale').innerText = `${Math.round(e.target.value * 100)}%`;
+            });
+
+            bindSlider('input-rotation', 'rotation', 'val-rotation', '°');
+            bindSlider('input-frame-width', 'frameWidth', 'val-frame-width', 'px');
+            bindSlider('input-frame-padding', 'framePadding', 'val-frame-padding', 'px');
+            bindSlider('input-frame-radius', 'frameRadius', 'val-frame-radius', 'px');
+
+            bindSlider('input-brightness', 'brightness', 'val-brightness', '%');
+            bindSlider('input-contrast', 'contrast', 'val-contrast', '%');
+            bindSlider('input-saturate', 'saturate', 'val-saturate', '%');
+            bindSlider('input-blur', 'blur', 'val-blur', 'px');
+
+            // Color Pickers
+            document.getElementById('input-frame-color').addEventListener('input', (e) => {
+                state.frameColor = e.target.value;
+                document.getElementById('hex-frame-color').innerText = e.target.value;
+                render();
+            });
+
+            document.getElementById('input-accent-color').addEventListener('input', (e) => {
+                state.accentColor = e.target.value;
+                document.getElementById('hex-accent-color').innerText = e.target.value;
+                render();
+            });
+
+            // Flip Buttons
+            document.getElementById('btn-flip-h').addEventListener('click', () => {
+                state.flipH = !state.flipH;
+                render();
+            });
+            document.getElementById('btn-flip-v').addEventListener('click', () => {
+                state.flipV = !state.flipV;
+                render();
+            });
+
+            // Filters Preset Buttons
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => {
+                        b.classList.remove('active', 'bg-indigo-600', 'text-white');
+                        b.classList.add('bg-slate-800', 'text-slate-300');
+                    });
+                    btn.classList.add('active', 'bg-indigo-600', 'text-white');
+                    btn.classList.remove('bg-slate-800', 'text-slate-300');
+
+                    state.filterPreset = btn.getAttribute('data-filter');
+                    render();
+                });
+            });
+
+            // Multi-Text UI Sync & Management
+            function updateTextUI() {
+                const listContainer = document.getElementById('text-items-list');
+                const editorBox = document.getElementById('text-editor-box');
+
+                if (!listContainer || !editorBox) return;
+
+                listContainer.innerHTML = '';
+
+                if (state.texts.length === 0) {
+                    editorBox.classList.add('hidden');
+                    listContainer.innerHTML = '<span class="text-xs text-slate-500 italic">Belum ada teks. Klik "Tambah Teks" di atas.</span>';
+                    return;
+                }
+
+                editorBox.classList.remove('hidden');
+
+                state.texts.forEach((t, idx) => {
+                    const btn = document.createElement('button');
+                    const isSelected = t.id === state.selectedTextId;
+                    btn.className = `px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition ${
+                        isSelected 
+                            ? 'bg-indigo-600 text-white shadow-md' 
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                    }`;
+                    btn.innerHTML = `<i data-lucide="type" class="w-3.5 h-3.5"></i> <span>Teks ${idx + 1}: ${t.content.substring(0, 10)}${t.content.length > 10 ? '...' : ''}</span>`;
+                    btn.addEventListener('click', () => {
+                        state.selectedTextId = t.id;
+                        updateTextUI();
+                        render();
+                    });
+                    listContainer.appendChild(btn);
+                });
+
+                lucide.createIcons();
+
+                const currentText = state.texts.find(t => t.id === state.selectedTextId) || state.texts[0];
+                if (currentText) {
+                    state.selectedTextId = currentText.id;
+                    document.getElementById('input-text-content').value = currentText.content;
+                    document.getElementById('input-text-font').value = currentText.font;
+                    document.getElementById('input-text-size').value = currentText.size;
+                    document.getElementById('input-text-color').value = currentText.color;
+                    document.getElementById('hex-text-color').innerText = currentText.color;
+                }
+            }
+
+            // Add New Text Item
+            document.getElementById('btn-add-text').addEventListener('click', () => {
+                const newId = 'txt_' + Date.now();
+                const newText = {
+                    id: newId,
+                    content: 'Teks Baru',
+                    font: 'sans',
+                    size: 44,
+                    color: '#ffffff',
+                    x: state.width / 2,
+                    y: state.height / 2
+                };
+                state.texts.push(newText);
+                state.selectedTextId = newId;
+                updateTextUI();
+                render();
+                showToast('Teks baru ditambahkan! Tarik di kanvas untuk memindahkan.');
+            });
+
+            // Delete Current Text Item
+            document.getElementById('btn-delete-text').addEventListener('click', () => {
+                if (state.texts.length === 0) return;
+                state.texts = state.texts.filter(t => t.id !== state.selectedTextId);
+                if (state.texts.length > 0) {
+                    state.selectedTextId = state.texts[state.texts.length - 1].id;
+                } else {
+                    state.selectedTextId = null;
+                }
+                updateTextUI();
+                render();
+                showToast('Teks berhasil dihapus');
+            });
+
+            // Input Event Listeners for Current Selected Text
+            document.getElementById('input-text-content').addEventListener('input', (e) => {
+                const currentText = state.texts.find(t => t.id === state.selectedTextId);
+                if (currentText) {
+                    currentText.content = e.target.value;
+                    updateTextUI();
+                    render();
+                }
+            });
+
+            document.getElementById('input-text-font').addEventListener('change', (e) => {
+                const currentText = state.texts.find(t => t.id === state.selectedTextId);
+                if (currentText) {
+                    currentText.font = e.target.value;
+                    render();
+                }
+            });
+
+            document.getElementById('input-text-size').addEventListener('input', (e) => {
+                const currentText = state.texts.find(t => t.id === state.selectedTextId);
+                if (currentText) {
+                    currentText.size = parseInt(e.target.value);
+                    render();
+                }
+            });
+
+            document.getElementById('input-text-color').addEventListener('input', (e) => {
+                const currentText = state.texts.find(t => t.id === state.selectedTextId);
+                if (currentText) {
+                    currentText.color = e.target.value;
+                    document.getElementById('hex-text-color').innerText = e.target.value;
+                    render();
+                }
+            });
+
+            // Reset Button
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                state.scale = 1;
+                state.rotation = 0;
+                state.offsetX = 0;
+                state.offsetY = 0;
+                state.flipH = false;
+                state.flipV = false;
+                state.filterPreset = 'normal';
+                state.brightness = 100;
+                state.contrast = 100;
+                state.saturate = 100;
+                state.blur = 0;
+
+                document.getElementById('input-scale').value = 1;
+                document.getElementById('val-scale').innerText = '100%';
+                document.getElementById('input-rotation').value = 0;
+                document.getElementById('val-rotation').innerText = '0°';
+                document.getElementById('input-brightness').value = 100;
+                document.getElementById('val-brightness').innerText = '100%';
+                document.getElementById('input-contrast').value = 100;
+                document.getElementById('val-contrast').innerText = '100%';
+                document.getElementById('input-saturate').value = 100;
+                document.getElementById('val-saturate').innerText = '100%';
+                document.getElementById('input-blur').value = 0;
+                document.getElementById('val-blur').innerText = '0px';
+
+                render();
+                showToast('Pengaturan posisi & filter di-reset');
+            });
+
+            // Download High Quality Framed Image
+            document.getElementById('btn-download').addEventListener('click', () => {
+                if (!state.image) {
+                    showToast('Silakan unggah foto terlebih dahulu!');
+                    return;
+                }
+
+                // Render image clean without text drag boundary box for export
+                isExporting = true;
+                render();
+
+                const dataUrl = canvas.toDataURL('image/png', 1.0);
+                const downloadLink = document.createElement('a');
+                downloadLink.download = `Bingkai_Foto_${Date.now()}.png`;
+                downloadLink.href = dataUrl;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                isExporting = false;
+                render();
+
+                showToast('Foto berhasil diunduh dalam format PNG!');
+            });
+
+            // Toast Notification
+            function showToast(message) {
+                const toast = document.getElementById('toast-message');
+                const toastText = document.getElementById('toast-text');
+                toastText.innerText = message;
+
+                toast.classList.remove('hidden');
+                toast.classList.add('flex', 'opacity-100');
+
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toast.classList.remove('flex', 'opacity-100');
+                }, 3000);
+            }
+
+            // Initialize multi-text UI & demo picture
+            updateTextUI();
+            loadSampleImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1080&q=80');
+        });
+    </script>
+</body>
+</html>
